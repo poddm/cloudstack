@@ -32,16 +32,15 @@ import com.cloud.utils.net.MacAddress;
 /**
  * Canonical source of the management-server node id ({@code msid}).
  *
- * <p>By default the id is derived from the host hardware MAC address. When running in
- * Kubernetes the pod MAC address changes on every restart, which changes the {@code msid},
- * orphans the {@code mshost} row, and breaks async jobs, HA work
- * ({@code fk_op_ha_work__mgmt_server_id}), and router/stats ownership.
+ * <p>By default the id is derived from the host hardware MAC address. When the MAC address is
+ * not stable across restarts, the {@code msid} changes, which orphans the {@code mshost} row
+ * and breaks async jobs, HA work ({@code fk_op_ha_work__mgmt_server_id}), and router/stats
+ * ownership.
  *
  * <p>Setting the environment variable {@code CLOUDSTACK_MSID_FROM_FQDN=true} (or the system
  * property {@code cloudstack.msid.from.fqdn=true}) instead derives the id from a SHA-256 hash
- * of the node FQDN, which stays stable across StatefulSet restarts. All node-identity
- * consumers must obtain the id from {@link #getManagementServerId()} so they agree on the
- * same value.
+ * of the node FQDN, which stays stable across restarts. All node-identity consumers must
+ * obtain the id from {@link #getManagementServerId()} so they agree on the same value.
  */
 public class ManagementServerNode extends AdapterBase implements SystemIntegrityChecker {
 
