@@ -47,12 +47,15 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
     private static final String FQDN_ENV_VAR = "CLOUDSTACK_MSID_FROM_FQDN";
     private static final String FQDN_SYS_PROP = "cloudstack.msid.from.fqdn";
 
+    private static String s_nodeIdSource;
+    private static Exception s_initError;
     private static final long s_nodeId = initNodeId();
 
     private static long initNodeId() {
         if (isFqdnModeEnabled()) {
             return generateIdFromFqdn();
         }
+        s_nodeIdSource = "mac-address";
         return MacAddress.getMacAddress().toLong();
     }
 
@@ -69,14 +72,19 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
     }
 
     /**
-     * Derives a stable node id from a SHA-256 hash of the local FQDN. Falls back to the
-     * hardware MAC address if the FQDN cannot be resolved.
+     * Derives a stable node id from a SHA-256 hash of the local FQDN.
      *
-     * @return a positive, non-zero 48-bit id
+     * <p>On failure it records the cause and returns {@code 0} (an invalid id) rather than
+     * silently reverting to an unstable MAC-based id. The invalid id makes {@link #check()}
+     * fail the system-integrity check, which stops startup cleanly via {@link #start()}
+     * instead of raising an {@code ExceptionInInitializerError} from static initialization.
+     *
+     * @return a positive, non-zero 48-bit id, or {@code 0} if it cannot be derived
      */
     private static long generateIdFromFqdn() {
         try {
             String fqdn = InetAddress.getLocalHost().getCanonicalHostName();
+            s_nodeIdSource = "fqdn:" + fqdn;
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(fqdn.getBytes(StandardCharsets.UTF_8));
             long id = 0;
@@ -90,7 +98,9 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
             }
             return id;
         } catch (Exception e) {
-            return MacAddress.getMacAddress().toLong();
+            s_nodeIdSource = "fqdn-error";
+            s_initError = e;
+            return 0;
         }
     }
 
@@ -101,7 +111,8 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
     @Override
     public void check() {
         if (s_nodeId <= 0) {
-            throw new CloudRuntimeException("Unable to get the management server node id");
+            throw new CloudRuntimeException(
+                    "Unable to derive the management server node id (source: " + s_nodeIdSource + ")", s_initError);
         }
     }
 
@@ -117,6 +128,7 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
             logger.error("System integrity check exception", e);
             System.exit(1);
         }
+        logger.info("Management server node id: {} (source: {})", s_nodeId, s_nodeIdSource);
         return true;
     }
 }
