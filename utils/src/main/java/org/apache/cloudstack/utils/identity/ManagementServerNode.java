@@ -124,9 +124,9 @@ public class ManagementServerNode extends AdapterBase implements SystemIntegrity
     public boolean start() {
         try {
             check();
-        } catch (Exception e) {
-            logger.error("System integrity check exception", e);
-            System.exit(1);
+        } catch (CloudRuntimeException e) {
+            logger.error("System integrity check failed for the management server node id", e);
+            throw e;
         }
         logger.info("Management server node id: {} (source: {})", s_nodeId, s_nodeIdSource);
         return true;

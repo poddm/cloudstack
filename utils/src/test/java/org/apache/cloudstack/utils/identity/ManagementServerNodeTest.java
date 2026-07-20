@@ -64,6 +64,12 @@ public class ManagementServerNodeTest {
     }
 
     @Test
+    public void testStartReturnsTrueWithValidNodeId() {
+        // With a valid node id, start() must succeed and return true without terminating the JVM.
+        assertTrue(new ManagementServerNode().start());
+    }
+
+    @Test
     public void testIsTruthyRecognizesTrueValues() throws Exception {
         assertTrue(invokeIsTruthy("true"));
         assertTrue(invokeIsTruthy("TRUE"));
