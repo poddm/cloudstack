@@ -5401,7 +5401,7 @@ public class VirtualMachineManagerImpl extends ManagerBase implements VirtualMac
                     && vm.getHypervisorType() != HypervisorType.Hyperv) {
                 logger.info("Detected out-of-band stop of HA enabled VM {}, transitioning to Stopped and scheduling HA restart (investigate=false).", vm);
                 if (!_haMgr.hasPendingHaWork(vm.getId())) {
-                    // FLXCLD-2814 FIX: The power state report already confirmed the VM is off
+                    // The power state report already confirmed the VM is off
                     // (e.g. OOM-killed QEMU process). We cannot use _haMgr.scheduleRestart() because it
                     // calls advanceStop(), which submits a VM work job and blocks waiting for completion.
                     // This code runs on the AgentManager-Handler thread, and the VM job queue does not
